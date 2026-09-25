@@ -1,0 +1,14 @@
+{
+  "accuracy": 0.9727272727272728,
+  "f1_weighted": 0.9727272727272728,
+  "distance_baseline_accuracy": 0.9318181818181818,
+  "n_train": 880,
+  "n_test": 220,
+  "classes": [
+    "Design",
+    "Engineering",
+    "Law",
+    "Management",
+    "Medicine"
+  ]
+}

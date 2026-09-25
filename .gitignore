@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+SkillCompassEnv/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# SQLite database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.bak
+*.tmp
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Python cache/testing
+.pytest_cache/
+.mypy_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# Local test model
+test_model.pkl
+app/app_backup.py
+stage1_confusion_matrix.png
+stage1_dataset.csv
+stage1_feature_importance.png
+stage1_imputer.pkl
+stage1_label_encoder.pkl
+stage1_metrics.json
+stage1_model.pkl
