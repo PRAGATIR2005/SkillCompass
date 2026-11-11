@@ -1,8 +1,15 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import requests
 from datetime import date
+from llm_guidance import generate_personalized_guidance
 
-from assessment_questions import get_stage1_questions
+from assessment_questions import (
+    get_stage1_questions,
+    get_stage2_questions,
+    get_stage3_questions,
+    get_stage4_questions
+)
 from assessment_scoring import calculate_feature_scores
 from prediction_engine import predict_stage
 
@@ -17,6 +24,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
 
 # ============================================================
 # PROFESSIONAL FRONTEND STYLING
@@ -254,7 +262,8 @@ defaults = {
     "selected_stage": None,
     "flash_message": None,
     "flash_type": "success",
-    "auth_mode": "choice"
+    "auth_mode": "choice",
+    "scroll_to_top": False
 }
 
 for key, value in defaults.items():
@@ -299,32 +308,19 @@ def go_to(page):
 def logout():
 
     st.session_state.logged_in = False
-
     st.session_state.username = ""
-
     st.session_state.user_id = None
-
     st.session_state.email = ""
-
     st.session_state.age = None
-
     st.session_state.date_of_birth = ""
-
     st.session_state.stage = ""
-
     st.session_state.stage_name = ""
-
     st.session_state.access_token = ""
-
     st.session_state.is_first_login = False
-
     st.session_state.page = "welcome"
-
     st.session_state.assessment_result = None
     st.session_state.assessment_id = None
-
     st.session_state.selected_stage = None
-
     st.session_state.flash_message = None
     st.session_state.auth_mode = "choice"
 
@@ -432,8 +428,6 @@ if st.session_state.logged_in:
             use_container_width=True
         ):
             logout()
-
-
 # ============================================================
 # WELCOME + AUTHENTICATION
 # ============================================================
@@ -443,9 +437,9 @@ if (
     and not st.session_state.logged_in
 ):
 
-    # ------------------------------------------------------------
+    # --------------------------------------------------------
     # LANDING PAGE
-    # ------------------------------------------------------------
+    # --------------------------------------------------------
 
     st.markdown(
         """
@@ -471,12 +465,14 @@ if (
     left, center, right = st.columns([1.2, 1.1, 1.2])
 
     with center:
+
         if st.button(
             "🚀  Get Started",
             use_container_width=True,
             type="primary"
         ):
             st.session_state.auth_mode = "choice"
+            st.session_state.scroll_to_top = True
             go_to("auth")
 
     st.write("")
@@ -524,7 +520,9 @@ if (
         [col1, col2, col3, col4],
         features
     ):
+
         with column:
+
             st.markdown(
                 f"""
                 <div class="feature-card">
@@ -556,9 +554,25 @@ elif (
     and not st.session_state.logged_in
 ):
 
-    # ------------------------------------------------------------
+    # Reset the browser scroll position when opening the auth page.
+    if st.session_state.get("scroll_to_top", False):
+        components.html(
+            """
+            <script>
+                window.parent.scrollTo({top: 0, left: 0, behavior: "instant"});
+                const main = window.parent.document.querySelector("section.main");
+                if (main) {
+                    main.scrollTo({top: 0, left: 0, behavior: "instant"});
+                }
+            </script>
+            """,
+            height=0,
+        )
+        st.session_state.scroll_to_top = False
+
+    # --------------------------------------------------------
     # AUTH CHOICE
-    # ------------------------------------------------------------
+    # --------------------------------------------------------
 
     if st.session_state.auth_mode == "choice":
 
@@ -637,6 +651,7 @@ elif (
         left, center, right = st.columns([1.2, 1.1, 1.2])
 
         with center:
+
             if st.button(
                 "← Back to Home",
                 use_container_width=True
@@ -644,10 +659,9 @@ elif (
                 st.session_state.auth_mode = "choice"
                 go_to("welcome")
 
-
-    # ------------------------------------------------------------
+    # --------------------------------------------------------
     # LOGIN
-    # ------------------------------------------------------------
+    # --------------------------------------------------------
 
     elif st.session_state.auth_mode == "login":
 
@@ -829,10 +843,9 @@ elif (
                 st.session_state.auth_mode = "choice"
                 st.rerun()
 
-
-    # ------------------------------------------------------------
+    # --------------------------------------------------------
     # REGISTER
-    # ------------------------------------------------------------
+    # --------------------------------------------------------
 
     elif st.session_state.auth_mode == "register":
 
@@ -859,9 +872,7 @@ elif (
 
         with center:
 
-            # ----------------------------------------------------
             # PERSONAL INFORMATION
-            # ----------------------------------------------------
 
             name = st.text_input(
                 "Full Name",
@@ -893,9 +904,7 @@ elif (
                     key="register_dob"
                 )
 
-            # ----------------------------------------------------
             # ACCOUNT INFORMATION
-            # ----------------------------------------------------
 
             email = st.text_input(
                 "Email",
@@ -917,9 +926,7 @@ elif (
                 key="register_confirm"
             )
 
-            # ----------------------------------------------------
             # STAGE SELECTION
-            # ----------------------------------------------------
 
             st.subheader("🎯 Select Your Current Stage")
 
@@ -952,9 +959,7 @@ elif (
                 selected_stage_display
             ]
 
-            # ----------------------------------------------------
             # CREATE ACCOUNT
-            # ----------------------------------------------------
 
             if st.button(
                 "Create Account →",
@@ -1114,9 +1119,6 @@ elif (
             ):
                 st.session_state.auth_mode = "choice"
                 st.rerun()
-
-
-
 # ============================================================
 # DASHBOARD
 # ============================================================
@@ -1144,9 +1146,7 @@ elif (
     st.header("🎯 Your Selected Stage")
 
     stage = st.session_state.stage
-
     stage_name = st.session_state.stage_name
-
     stage_info = STAGES.get(stage)
 
     if stage_info:
@@ -1172,29 +1172,41 @@ elif (
                     type="primary"
                 ):
 
-                    st.session_state.selected_stage = (
-                        "stage1"
-                    )
-
+                    st.session_state.selected_stage = "stage1"
                     go_to("assessment")
 
             elif stage == "Stage 2":
 
-                st.info(
-                    "Stage 2 assessment will be available soon."
-                )
+                if st.button(
+                    "Start Stage 2 Assessment →",
+                    use_container_width=True,
+                    type="primary"
+                ):
+
+                    st.session_state.selected_stage = "stage2"
+                    go_to("assessment")
 
             elif stage == "Stage 3":
 
-                st.info(
-                    "Stage 3 assessment will be available soon."
-                )
+                if st.button(
+                    "Start Stage 3 Assessment →",
+                    use_container_width=True,
+                    type="primary"
+                ):
+
+                    st.session_state.selected_stage = "stage3"
+                    go_to("assessment")
 
             elif stage == "Stage 4":
 
-                st.info(
-                    "Stage 4 assessment will be available soon."
-                )
+                if st.button(
+                    "Start Stage 4 Assessment →",
+                    use_container_width=True,
+                    type="primary"
+                ):
+
+                    st.session_state.selected_stage = "stage4"
+                    go_to("assessment")
 
     else:
 
@@ -1255,10 +1267,16 @@ elif (
     # STAGE ACCESS PROTECTION
     # ========================================================
 
-    if st.session_state.stage != "Stage 1":
+    if st.session_state.stage not in (
+        "Stage 1",
+        "Stage 2",
+        "Stage 3",
+        "Stage 4"
+    ):
 
         st.error(
-            "🚫 You do not have access to the Stage 1 assessment."
+            "🚫 You do not have access to an active assessment "
+            "for your stage."
         )
 
         st.info(
@@ -1270,28 +1288,46 @@ elif (
             "← Back to Dashboard",
             use_container_width=True
         ):
+
             go_to("dashboard")
 
         st.stop()
 
-
     # ========================================================
-    # STAGE 1 ASSESSMENT
+    # STAGE-SPECIFIC ASSESSMENT
     # ========================================================
 
-    st.title(
-        "🎓 Stage 1 — Post-10th Stream Selection"
-    )
+    if st.session_state.stage == "Stage 1":
+
+        st.title("🎓 Stage 1 — Post-10th Stream Selection")
+        questions = get_stage1_questions()
+
+    elif st.session_state.stage == "Stage 2":
+
+        st.title("📚 Stage 2 — Higher Education Selection")
+        questions = get_stage2_questions()
+
+    elif st.session_state.stage == "Stage 3":
+
+        st.title("💼 Stage 3 — Working Professional Career Guidance")
+        questions = get_stage3_questions()
+
+    elif st.session_state.stage == "Stage 4":
+
+        st.title("🎓 Stage 4 — Postgraduate Career Guidance")
+        questions = get_stage4_questions()
+
+    else:
+
+        st.error("Unsupported assessment stage.")
+        st.stop()
 
     st.write(
         "Answer each question based on your own "
         "interests, abilities and preferences."
     )
 
-    questions = get_stage1_questions()
-
     responses = {}
-
     answered_count = 0
 
     st.info(
@@ -1345,13 +1381,14 @@ elif (
 
         st.divider()
 
-
     # ========================================================
     # PROGRESS
     # ========================================================
 
     progress_value = (
         answered_count / len(questions)
+        if questions
+        else 0
     )
 
     st.progress(
@@ -1362,9 +1399,8 @@ elif (
         )
     )
 
-
     # ========================================================
-    # SUBMIT
+    # SUBMIT ASSESSMENT
     # ========================================================
 
     if st.button(
@@ -1399,8 +1435,27 @@ elif (
                 # ML PREDICTION
                 # ------------------------------------------------
 
+                stage_model_mapping = {
+                    "Stage 1": "stage1",
+                    "Stage 2": "stage2",
+                    "Stage 3": "stage3",
+                    "Stage 4": "stage4",
+                }
+
+                model_stage = stage_model_mapping.get(
+                    st.session_state.stage
+                )
+
+                if model_stage is None:
+
+                    st.error(
+                        "Unsupported assessment stage."
+                    )
+
+                    st.stop()
+
                 result = predict_stage(
-                    "stage1",
+                    model_stage,
                     feature_scores
                 )
 
@@ -1409,7 +1464,7 @@ elif (
                 # ------------------------------------------------
 
                 assessment_payload = {
-                    "stage": "Stage 1",
+                    "stage": st.session_state.stage,
                     "recommendation": result["recommendation"],
                     "responses": responses,
                     "feature_scores": feature_scores
@@ -1446,12 +1501,16 @@ elif (
                 if save_response.status_code != 200:
 
                     try:
+
                         error_data = save_response.json()
+
                         error_message = error_data.get(
                             "detail",
                             "Unable to save assessment."
                         )
+
                     except Exception:
+
                         error_message = (
                             "Unable to save assessment."
                         )
@@ -1478,7 +1537,8 @@ elif (
                     "responses": responses,
                     "assessment_id": (
                         saved_data.get("assessment_id")
-                    )
+                    ),
+                    "ai_guidance": None
                 }
 
                 go_to("result")
@@ -1488,7 +1548,6 @@ elif (
                 st.error(
                     f"An error occurred: {e}"
                 )
-
 
 # ============================================================
 # RESULT PAGE
@@ -1515,7 +1574,7 @@ elif (
     st.divider()
 
     # ========================================================
-    # RECOMMENDATION
+    # ML RECOMMENDATION
     # ========================================================
 
     recommendation = result[
@@ -1534,25 +1593,22 @@ elif (
     # FEATURE SCORES
     # ========================================================
 
-    st.header(
-        "📊 Your Assessment Profile"
+    st.header("📊 Your Assessment Profile")
+
+    st.caption(
+        "Feature scores are averages of your responses on a "
+        "scale from 1 to 9. Higher scores indicate stronger "
+        "agreement with the corresponding assessment statements; "
+        "they do not independently prove ability or expertise."
     )
 
     col1, col2 = st.columns(2)
 
-    feature_items = list(
-        feature_scores.items()
-    )
+    feature_items = list(feature_scores.items())
 
-    for index, (feature, score) in enumerate(
-        feature_items
-    ):
+    for index, (feature, score) in enumerate(feature_items):
 
-        column = (
-            col1
-            if index % 2 == 0
-            else col2
-        )
+        column = col1 if index % 2 == 0 else col2
 
         with column:
 
@@ -1561,42 +1617,55 @@ elif (
                 " "
             ).title()
 
-            st.write(
-                f"**{feature_name}**"
+            st.write(f"**{feature_name}**")
+
+            # The assessment response scale is 1–9.
+            # Progress bars require values between 0 and 1.
+            score_progress = max(
+                0.0,
+                min(float(score) / 9.0, 1.0)
             )
 
             st.progress(
-                min(score / 10, 1.0),
-                text=f"{score:.2f} / 10"
+                score_progress,
+                text=f"{float(score):.2f} / 9"
             )
-
 
     # ========================================================
     # PREDICTION PROBABILITIES
     # ========================================================
 
-    st.header(
-        "🎯 Prediction Probabilities"
-    )
+    st.header("🎯 Prediction Probabilities")
 
-    for class_name, probability in result[
-        "probabilities"
-    ].items():
+    probabilities = result.get("probabilities", {})
 
-        display_name = class_name.replace(
-            "_",
-            " "
+    if probabilities:
+
+        for class_name, probability in probabilities.items():
+
+            display_name = class_name.replace(
+                "_",
+                " "
+            )
+
+            probability = float(probability)
+
+            st.write(f"**{display_name}**")
+
+            st.progress(
+                max(0.0, min(probability, 1.0)),
+                text=f"{probability * 100:.2f}%"
+            )
+
+    else:
+
+        st.info(
+            "Prediction probabilities are not available."
         )
 
-        st.write(
-            f"**{display_name}**"
-        )
-
-        st.progress(
-            probability,
-            text=f"{probability * 100:.2f}%"
-        )
-
+    # ========================================================
+    # ML RECOMMENDATION DISCLAIMER
+    # ========================================================
 
     st.warning(
         "This recommendation is generated by the "
@@ -1606,6 +1675,87 @@ elif (
     )
 
     st.divider()
+
+    # ========================================================
+    # AI-POWERED PERSONALIZED CAREER GUIDANCE
+    # ========================================================
+
+    st.header("🤖 AI-Powered Personalized Career Guidance")
+
+    st.write(
+        "Get an explanation of your assessment results, "
+        
+    )
+
+    
+
+    # Generate guidance only when the student requests it.
+    if st.button(
+        "✨ Generate My AI Career Guidance",
+        key="generate_ai_guidance",
+        use_container_width=True,
+        type="primary"
+    ):
+
+        with st.spinner(
+            "Generating your personalized guidance. "
+            "This may take a little time..."
+        ):
+
+            try:
+
+                stage_name = STAGES.get(
+                    st.session_state.stage,
+                    {}
+                ).get(
+                    "name",
+                    st.session_state.stage or "Career Assessment"
+                )
+
+                guidance = generate_personalized_guidance(
+                    stage_name=stage_name,
+                    recommendation=result["recommendation"],
+                    feature_scores=feature_scores,
+                    probabilities=probabilities
+                )
+
+                st.session_state.assessment_result[
+                    "ai_guidance"
+                ] = guidance
+
+            except Exception as e:
+
+                st.error(
+                    "Unable to generate AI guidance right now. "
+                    "Your machine-learning results are still available."
+                )
+
+                st.caption(
+                    f"Technical details: {e}"
+                )
+
+    # Display guidance already generated for this assessment.
+    saved_guidance = st.session_state.assessment_result.get(
+        "ai_guidance"
+    )
+
+    if saved_guidance:
+
+        st.subheader("Your Personalized Guidance")
+
+        st.markdown(saved_guidance)
+
+        st.caption(
+            "AI-generated guidance is intended to support "
+            "your decision-making. It does not guarantee "
+            "success or replace your own judgment."
+        )
+
+    st.divider()
+
+    # ========================================================
+    # RESULT PAGE ACTIONS
+    # ========================================================
 
     col1, col2 = st.columns(2)
 
@@ -1629,8 +1779,6 @@ elif (
         ):
 
             go_to("dashboard")
-
-
 # ============================================================
 # HISTORY
 # ============================================================
@@ -1683,13 +1831,9 @@ elif (
 
             if login_history:
 
-                st.subheader(
-                    "Recent Login Activity"
-                )
+                st.subheader("Recent Login Activity")
 
-                for index, login in enumerate(
-                    login_history
-                ):
+                for index, login in enumerate(login_history):
 
                     login_time = login.get(
                         "login_time",
@@ -1705,20 +1849,15 @@ elif (
 
             else:
 
-                st.info(
-                    "No login history found."
-                )
+                st.info("No login history found.")
 
         elif response.status_code == 401:
 
             st.error(
-                "Your session has expired. "
-                "Please login again."
+                "Your session has expired. Please login again."
             )
 
-            if st.button(
-                "Return to Login"
-            ):
+            if st.button("Return to Login"):
                 logout()
 
         else:
@@ -1745,7 +1884,6 @@ elif (
             f"Error loading login history: {e}"
         )
 
-
     # ========================================================
     # ASSESSMENT HISTORY
     # ========================================================
@@ -1763,8 +1901,7 @@ elif (
         if assessment_response.status_code == 401:
 
             st.error(
-                "Your session has expired. "
-                "Please login again."
+                "Your session has expired. Please login again."
             )
 
             if st.button("Return to Login"):
@@ -1791,13 +1928,9 @@ elif (
 
             if assessments:
 
-                st.subheader(
-                    "Previous Assessment Results"
-                )
+                st.subheader("Previous Assessment Results")
 
-                for index, assessment in enumerate(
-                    assessments
-                ):
+                for index, assessment in enumerate(assessments):
 
                     assessment_id = assessment.get(
                         "id",
@@ -1809,16 +1942,13 @@ elif (
                         "Unknown"
                     )
 
-                    assessment_recommendation = (
-                        assessment.get(
-                            "recommendation",
-                            "Unknown"
-                        )
+                    assessment_recommendation = assessment.get(
+                        "recommendation",
+                        "Unknown"
                     )
 
                     display_recommendation = (
-                        assessment_recommendation
-                        .replace("_", " ")
+                        assessment_recommendation.replace("_", " ")
                     )
 
                     completed_at = assessment.get(
@@ -1842,8 +1972,7 @@ elif (
                             )
 
                             st.write(
-                                f"**Stage:** "
-                                f"{assessment_stage}"
+                                f"**Stage:** {assessment_stage}"
                             )
 
                         with col2:
@@ -1854,8 +1983,7 @@ elif (
                             )
 
                             st.write(
-                                f"**Completed:** "
-                                f"{completed_at}"
+                                f"**Completed:** {completed_at}"
                             )
 
             else:
@@ -1867,12 +1995,16 @@ elif (
         else:
 
             try:
+
                 error_data = assessment_response.json()
+
                 error_message = error_data.get(
                     "detail",
                     "Unable to retrieve assessment history."
                 )
+
             except Exception:
+
                 error_message = (
                     "Unable to retrieve assessment history."
                 )
@@ -1960,9 +2092,7 @@ elif (
 
     st.text_input(
         "User ID",
-        value=str(
-            st.session_state.user_id
-        ),
+        value=str(st.session_state.user_id),
         disabled=True
     )
 

@@ -1,6 +1,9 @@
 import pandas as pd
 
-from model_loader import load_stage
+try:
+    from .model_loader import load_stage
+except ImportError:
+    from model_loader import load_stage
 
 
 # ============================================================
