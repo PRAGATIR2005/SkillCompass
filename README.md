@@ -22,8 +22,8 @@ The system uses machine learning to provide stage-specific recommendations for d
 - Assess users based on skills, interests, abilities, and preferences.
 - Provide personalized educational and career recommendations.
 - Use machine learning for stage-specific classification.
-- Identify skill gaps between the user's profile and target paths.
-- Maintain secure user authentication and assessment history.
+- Identify suitable pathways based on assessment results.
+- Maintain user assessment information and history.
 
 ## Technologies Used
 
@@ -31,96 +31,117 @@ The system uses machine learning to provide stage-specific recommendations for d
 - Streamlit
 - FastAPI
 - Scikit-learn
-- Pandas
-- NumPy
-- SQLAlchemy
-- SQLite
-- JWT Authentication
-- bcrypt
-- Git & GitHub
+- Pandas and NumPy
+- SQLAlchemy and SQLite
+- Ollama (Llama 3.2 3B)
+- Matplotlib
+- Git and GitHub
 
 ## Machine Learning
 
-The project uses a Gradient Boosting Classifier for stage-specific prediction.
+The project uses four separate Gradient Boosting Classifier models, one for each assessment stage.
 
-Current experimental model accuracies:
+Current experimental model performance:
 
 | Stage | Accuracy |
 |---|---:|
 | Stage 1 | 96.82% |
-| Stage 2 | 97.70% |
-| Stage 3 | 89.60% |
-| Stage 4 | 93.20% |
+| Stage 2 | 97.27% |
+| Stage 3 | 90.00% |
+| Stage 4 | 93.18% |
 
-The current models are trained using synthetic datasets for academic prototype development.
+The models are trained and evaluated using synthetic datasets.
+
+**Note:** These results represent experimental classification performance on held-out synthetic test data, not real-world career prediction accuracy.
+
+## AI-Powered Career Guidance
+
+SkillCompass integrates Ollama with the Llama 3.2 3B model to generate personalized career guidance.
+
+The LLM uses the predicted pathway and assessment feature scores to provide:
+
+- Reasons to explore the recommended pathway.
+- Potential strengths indicated by assessment responses.
+- Areas for further development.
+- Practical next steps.
+
+The ML model determines the recommended pathway, while the LLM provides supplementary guidance.
 
 ## Main Features
 
-- User registration and login
-- Password hashing
-- JWT-based authentication
-- Stage-specific assessments
-- Machine-learning-based recommendations
-- Skill-gap analysis
-- Assessment history
-- Stage-based access control
-- Model evaluation and feature importance
+- User registration and login.
+- Stage-specific assessments.
+- Machine-learning-based recommendations.
+- AI-generated personalized career guidance.
+- Assessment history.
+- Model evaluation and feature importance visualization.
 
 ## Project Structure
 
+```text
 SkillCompass/
 ├── app/
 ├── backend/
 ├── database/
 ├── models/
+│   ├── stage1/
+│   ├── stage2/
+│   ├── stage3/
+│   └── stage4/
 ├── training/
 ├── requirements.txt
 ├── .gitignore
 └── README.md
+```
 
 ## Running the Project
 
 ### Start Backend
 
-uvicorn backend.main:app --reload
+```bash
+python -m uvicorn backend.main:app --reload
+```
 
-Backend:
+Backend: http://127.0.0.1:8000
 
-http://127.0.0.1:8000
-
-API documentation:
-
-http://127.0.0.1:8000/docs
+API Documentation: http://127.0.0.1:8000/docs
 
 ### Start Frontend
 
-streamlit run app/app.py
+```bash
+python -m streamlit run app/app.py
+```
 
-Frontend:
+Frontend: http://localhost:8501
 
-http://localhost:8501
+### AI Guidance Setup
+
+Install Ollama and download the required model:
+
+```bash
+ollama pull llama3.2:3b
+```
+
+Ensure Ollama is running before using AI-generated guidance.
 
 ## SDG Alignment
 
-The project is aligned with:
+**SDG 4 – Quality Education**
 
-SDG 4 – Quality Education
-
-SkillCompass aims to support personalized educational and career guidance through technology and machine learning.
+SkillCompass aims to support personalized educational exploration and career guidance through artificial intelligence and machine learning.
 
 ## Future Enhancements
 
-- Real-world survey data integration
-- Learning-resource recommendations based on skill gaps
-- Personalized learning paths
-- Expanded career and course database
-- Cloud deployment
-- Improved recommendation explainability
+- Integration of real-world assessment data.
+- Personalized learning-resource recommendations.
+- Expanded career and course database.
+- Cloud deployment.
+- Improved recommendation explainability.
 
 ## Academic Project
 
-Project Title: AI-Based Skill Assessment and Career Guidance System for Students
+**Project Title:** AI-Based Skill Assessment and Career Guidance System for Students
 
-Project Name: SkillCompass
+**Project Name:** SkillCompass
 
-Domains: Artificial Intelligence, Machine Learning, Big Data, Cloud Computing and Web Technologies
+**Domains:** Artificial Intelligence, Machine Learning, Data Science and Web Technologies.
